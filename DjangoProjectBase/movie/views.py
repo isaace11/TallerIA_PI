@@ -2,7 +2,12 @@ from django.shortcuts import render
 from django.http import HttpResponse
 
 from .models import Movie
+from openai import OpenAI
+from dotenv import load_dotenv
 
+
+import os
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import io
@@ -123,3 +128,58 @@ def generate_bar_chart(data, xlabel, ylabel):
     buffer.close()
     graphic = base64.b64encode(image_png).decode('utf-8')
     return graphic
+def recommendation(request):
+    recommended_movie = None
+    similarity = None
+    prompt = ""
+
+    if request.method == "POST":
+        prompt = request.POST.get("prompt", "").strip()
+
+        if prompt:
+            load_dotenv("../openAI.env")
+            client = OpenAI(
+                api_key=os.environ.get("openai_apikey")
+            )
+
+            response = client.embeddings.create(
+                input=[prompt],
+                model="text-embedding-3-small"
+            )
+
+            prompt_emb = np.array(
+                response.data[0].embedding,
+                dtype=np.float32
+            )
+
+            max_similarity = -1
+
+            for movie in Movie.objects.exclude(emb__isnull=True):
+                movie_emb = np.frombuffer(
+                    movie.emb,
+                    dtype=np.float32
+                )
+
+                current_similarity = np.dot(
+                    prompt_emb,
+                    movie_emb
+                ) / (
+                    np.linalg.norm(prompt_emb)
+                    * np.linalg.norm(movie_emb)
+                )
+
+                if current_similarity > max_similarity:
+                    max_similarity = current_similarity
+                    recommended_movie = movie
+
+            similarity = max_similarity
+
+    return render(
+        request,
+        "recommendation.html",
+        {
+            "recommended_movie": recommended_movie,
+            "similarity": similarity,
+            "prompt": prompt,
+        }
+    )

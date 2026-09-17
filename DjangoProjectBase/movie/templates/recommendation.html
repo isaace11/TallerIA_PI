@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h2 class="mb-4">Recomendador de películas</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="prompt" class="form-label">
+                Describe qué tipo de película quieres ver
+            </label>
+
+            <input
+                type="text"
+                class="form-control"
+                id="prompt"
+                name="prompt"
+                value="{{ prompt }}"
+                placeholder="Ej: película de fantasía con elementos sobrenaturales"
+                required
+            >
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Buscar recomendación
+        </button>
+    </form>
+
+    {% if recommended_movie %}
+        <div class="card mt-5" style="max-width: 500px;">
+            {% if recommended_movie.image %}
+                <img
+                    src="{{ recommended_movie.image.url }}"
+                    class="card-img-top"
+                    alt="{{ recommended_movie.title }}"
+                >
+            {% endif %}
+
+            <div class="card-body">
+                <h4 class="card-title">
+                    {{ recommended_movie.title }}
+                </h4>
+
+                <p class="card-text">
+                    {{ recommended_movie.description }}
+                </p>
+
+                <p>
+                    <strong>Género:</strong>
+                    {{ recommended_movie.genre }}
+                </p>
+
+                <p>
+                    <strong>Año:</strong>
+                    {{ recommended_movie.year }}
+                </p>
+
+                <p>
+                    <strong>Similitud:</strong>
+                    {{ similarity|floatformat:4 }}
+                </p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
